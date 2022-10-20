@@ -1,7 +1,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/logo_github_w.svg">
   <source media="(prefers-color-scheme: light)" srcset=".github/logo_github.svg">
-  <img src=".github/logo_github_w.svg">
+  <img src=".github/logo_github.svg">
 </picture>
 
 # caldera-container
