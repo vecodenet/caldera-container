@@ -5,7 +5,6 @@ declare(strict_types = 1);
 /**
  * Caldera Container
  * Container implementation, part of Vecode Caldera
- * @version 1.0
  * @author  biohzrdmx <github.com/biohzrdmx>
  * @copyright Copyright (c) 2022 Vecode. All rights reserved
  */
@@ -13,12 +12,16 @@ declare(strict_types = 1);
 namespace Caldera\Tests\Container;
 
 use Exception;
+use RuntimeException;
 
 use PHPUnit\Framework\TestCase;
+
+use Psr\Container\ContainerInterface;
 
 use Caldera\Container\Container;
 use Caldera\Container\ContainerException;
 use Caldera\Container\NotFoundException;
+use Caldera\Container\AbstractProvider;
 use Caldera\Container\Service;
 
 class ContainerTest extends TestCase {
@@ -230,6 +233,11 @@ class ContainerTest extends TestCase {
 		$instance = $container->get(Tap::class);
 		$this->assertInstanceOf(Tap::class, $instance);
 		$this->assertEquals($num, $instance->getNum());
+		# Create container
+		$container = new Container();
+		$service = $container->add(Goo::class);
+		$this->expectException(ContainerException::class);
+		$instance = $container->get(Goo::class);
 	}
 
 	public function testAddServiceWithDecoratorMethods() {
@@ -271,6 +279,47 @@ class ContainerTest extends TestCase {
 		$instance = $container->get(Cuz::class);
 		$this->assertInstanceOf(Baz::class, $instance);
 	}
+
+	public function testAddServiceWithInterfaceAndInstance() {
+		# Create container
+		$container = new Container();
+		# Add a service using an Interface and an Implementation class
+		$container->add(Baz::class, true);
+		$container->add(Cuz::class, true, Baz::class);
+		# Retrieve the instance and check that the type equals to the Implementation's type
+		$instance = $container->get(Cuz::class);
+		$this->assertInstanceOf(Baz::class, $instance);
+	}
+
+	public function testServiceProvider() {
+		# Create container
+		$container = new Container();
+		$provider = new FooProvider();
+		try {
+			$provider->getContainer();
+			$this->fail('Should have thrown a RuntimeException');
+		} catch (Exception $e) {
+			$this->assertInstanceOf(RuntimeException::class, $e);
+		}
+		# Add a service using a service provider
+		$container->provider($provider);
+		# Check the provider
+		$provided = $container->has(Foo::class);
+		$this->assertTrue($provided);
+		$provided = $container->has(Bar::class);
+		$this->assertTrue($provided);
+		$this->assertInstanceOf(Container::class, $provider->getContainer());
+		# Retrieve the instance and check that the type equals to the Implementation's type
+		$instance = $container->get(Foo::class);
+		$this->assertInstanceOf(Foo::class, $instance);
+		# Now try a service that is said to be provided but is not
+		try {
+			$instance = $container->get(Bar::class);
+			$this->fail('Should have thrown a ContainerException');
+		} catch (Exception $e) {
+			$this->assertInstanceOf(ContainerException::class, $e);
+		}
+	}
 }
 
 class Foo {
@@ -311,5 +360,30 @@ class Tap {
 
 	public function getNum(): int {
 		return $this->num;
+	}
+}
+
+class Goo {
+
+	protected $num = 0;
+
+	public function __construct(int $num) {
+		$this->num = $num;
+	}
+}
+
+class FooProvider extends AbstractProvider {
+
+	protected $provides = [
+		Foo::class,
+		Bar::class
+	];
+
+	public function bootstrap(): void {
+		//
+	}
+
+	public function register(): void {
+		$this->container->add(Foo::class, true);
 	}
 }

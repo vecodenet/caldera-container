@@ -3,7 +3,7 @@
 declare(strict_types = 1);
 
 /**
- * Caldera Database
+ * Caldera Container
  * Container implementation, part of Vecode Caldera
  * @author  biohzrdmx <github.com/biohzrdmx>
  * @copyright Copyright (c) 2022 Vecode. All rights reserved
@@ -18,6 +18,7 @@ use ReflectionClass;
 
 use Psr\Container\ContainerInterface;
 
+use Caldera\Container\ContainerAwareInterface;
 use Caldera\Container\ContainerException;
 use Caldera\Container\NotFoundException;
 use Caldera\Container\Service;
@@ -31,6 +32,18 @@ class Container implements ContainerInterface, ArrayAccess {
 	protected $services = [];
 
 	/**
+	 * Providers array
+	 * @var array
+	 */
+	protected $providers = [];
+
+	/**
+	 * Registered providers array
+	 * @var array
+	 */
+	protected $registered = [];
+
+	/**
 	 * Add a service
 	 * @param  string  $name     Service name
 	 * @param  bool    $shared   Shared flag
@@ -38,13 +51,27 @@ class Container implements ContainerInterface, ArrayAccess {
 	 * @return Service
 	 */
 	public function add(string $name, bool $shared = false, $instance = null): ?Service {
-		if (! $this->has($name) ) {
+		if ( !$this->has($name) || !isset( $this->services[$name] ) ) {
 			$service = new Service($shared, $instance);
 			$this->services[$name] = $service;
 			return $service;
 		} else {
 			return $this->services[$name];
 		}
+	}
+
+	/**
+	 * Add a new service provider
+	 * @param  ProviderInterface $provider Service provider
+	 * @return $this
+	 */
+	public function provider(ProviderInterface $provider) {
+		if ($provider instanceof ContainerAwareInterface) {
+			$provider->setContainer($this);
+		}
+		$provider->bootstrap();
+		$this->providers[] = $provider;
+		return $this;
 	}
 
 	/**
@@ -66,6 +93,12 @@ class Container implements ContainerInterface, ArrayAccess {
 	 */
 	public function get(string $name) {
 		if ( $this->has($name) ) {
+			if ( $this->provides($name) ) {
+				$this->register($name);
+				if ( !$this->has($name) || !isset( $this->services[$name] ) ) {
+					throw new ContainerException($this, "Service '{$name}' not provided by any registered provider");
+				}
+			}
 			$service = $this->services[$name];
 			$instance = $service->getInstance();
 			$arguments = $service->getArguments();
@@ -87,7 +120,7 @@ class Container implements ContainerInterface, ArrayAccess {
 				$instance = $this->make($reflector, $arguments);
 				$this->decorate($instance, $decorators);
 			} else if ( interface_exists($name) && $this->has($instance) ) {
-				# And interface with a registered implementation
+				# An Interface with a registered implementation
 				$instance = $this->get($instance);
 			} else if ( interface_exists($name) && class_exists($instance) ) {
 				# An Interface, get class name and try to get a new instance
@@ -127,7 +160,13 @@ class Container implements ContainerInterface, ArrayAccess {
 	 * @return bool
 	 */
 	public function has(string $name): bool {
-		return isset( $this->services[$name] );
+		if ( isset( $this->services[$name] ) ) {
+			return true;
+		}
+		if ( $this->provides($name) ) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -210,7 +249,7 @@ class Container implements ContainerInterface, ArrayAccess {
 							$dependency = new ReflectionClass( $type->getName() );
 							$resolved[] = $this->get($dependency->name);
 						} catch (Exception $e) {
-							throw new ContainerException($this, "Can not resolve parameter '{$parameter->name}'");
+							throw new ContainerException($this, "Can not resolve parameter '{$parameter->name}'"); // @codeCoverageIgnore
 						}
 					}
 				} else {
@@ -222,7 +261,7 @@ class Container implements ContainerInterface, ArrayAccess {
 						# Use the default value
 						$resolved[] = $parameter->getDefaultValue();
 					} else {
-						throw new ContainerException($this, "Can not resolve parameter '{$parameter->name}'");
+						throw new ContainerException($this, "Can not resolve parameter '{$parameter->name}'"); // @codeCoverageIgnore
 					}
 				}
 			}
@@ -246,6 +285,41 @@ class Container implements ContainerInterface, ArrayAccess {
 				} else {
 					# Nope, throw an exception
 					throw new ContainerException($this, "Method '{$method}' does not exist");
+				}
+			}
+		}
+	}
+
+	/**
+	 * Check if one of the service providers provide the given service
+	 * @param  string $service Service name
+	 * @return bool
+	 */
+	protected function provides(string $service): bool {
+		if ($this->providers) {
+			foreach ($this->providers as $provider) {
+				if ( $provider->provides($service) ) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Register a service thorugh a service provider
+	 * @param  string $service Service name
+	 * @return void
+	 */
+	protected function register(string $service): void {
+		if ($this->providers) {
+			foreach ($this->providers as $provider) {
+				$class = get_class($provider);
+				if ( in_array($class, $this->registered) ) continue;
+				if ( $provider->provides($service) ) {
+					$provider->register();
+					$this->registered[] = $class;
+					return;
 				}
 			}
 		}

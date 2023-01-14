@@ -3,7 +3,7 @@
 declare(strict_types = 1);
 
 /**
- * Caldera Database
+ * Caldera Container
  * Container implementation, part of Vecode Caldera
  * @author  biohzrdmx <github.com/biohzrdmx>
  * @copyright Copyright (c) 2022 Vecode. All rights reserved
