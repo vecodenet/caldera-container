@@ -25,11 +25,25 @@ abstract class AbstractProvider implements ProviderInterface, ContainerAwareInte
 	protected $provides = [];
 
 	/**
+	 * Bootstrap service provider
+	 */
+	public function bootstrap(): void {
+		# Placeholder
+	}
+
+	/**
 	 * Check if a service is provided by this provider
 	 * @param  string $service Service name
 	 * @return bool
 	 */
 	public function provides(string $service): bool {
 		return in_array($service, $this->provides);
+	}
+
+	/**
+	 * Boot service provider
+	 */
+	public function boot(): void {
+		# Placeholder
 	}
 }

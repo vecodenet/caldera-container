@@ -44,6 +44,12 @@ class Container implements ContainerInterface, ArrayAccess {
 	protected $registered = [];
 
 	/**
+	 * Booted providers array
+	 * @var array
+	 */
+	protected $booted = [];
+
+	/**
 	 * Add a service
 	 * @param  string  $name     Service name
 	 * @param  bool    $shared   Shared flag
@@ -317,6 +323,10 @@ class Container implements ContainerInterface, ArrayAccess {
 				$class = get_class($provider);
 				if ( in_array($class, $this->registered) ) continue;
 				if ( $provider->provides($service) ) {
+					if (! in_array($class, $this->booted) ) {
+						$provider->boot();
+						$this->booted[] = $class;
+					}
 					$provider->register();
 					$this->registered[] = $class;
 					return;

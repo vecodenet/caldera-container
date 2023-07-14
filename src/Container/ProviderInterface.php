@@ -31,4 +31,9 @@ interface ProviderInterface {
 	 * Register services
 	 */
 	public function register(): void;
+
+	/**
+	 * Boot service provider
+	 */
+	public function boot(): void;
 }

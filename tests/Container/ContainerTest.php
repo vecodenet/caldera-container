@@ -26,6 +26,8 @@ use Caldera\Container\Service;
 
 class ContainerTest extends TestCase {
 
+	public static int $booted = 0;
+
 	public function testGetUnknownService() {
 		# Create container
 		$container = new Container();
@@ -319,6 +321,8 @@ class ContainerTest extends TestCase {
 		} catch (Exception $e) {
 			$this->assertInstanceOf(ContainerException::class, $e);
 		}
+		# Check that the provider has been booted just once
+		$this->assertEquals(1, ContainerTest::$booted);
 	}
 }
 
@@ -385,5 +389,9 @@ class FooProvider extends AbstractProvider {
 
 	public function register(): void {
 		$this->container->add(Foo::class, true);
+	}
+
+	public function boot(): void {
+		ContainerTest::$booted += 1;
 	}
 }
