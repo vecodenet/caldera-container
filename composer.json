@@ -1,7 +1,7 @@
 {
   "name": "vecode/caldera-container",
   "description": "Container implementation, part of Vecode Caldera",
-  "version": "1.2",
+  "version": "1.2.1",
   "type": "library",
   "license": "MIT",
   "authors": [

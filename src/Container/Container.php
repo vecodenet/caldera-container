@@ -324,11 +324,11 @@ class Container implements ContainerInterface, ArrayAccess {
 				if ( in_array($class, $this->registered) ) continue;
 				if ( $provider->provides($service) ) {
 					if (! in_array($class, $this->booted) ) {
-						$provider->boot();
 						$this->booted[] = $class;
+						$provider->boot();
 					}
-					$provider->register();
 					$this->registered[] = $class;
+					$provider->register();
 					return;
 				}
 			}
