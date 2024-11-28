@@ -13,17 +13,15 @@ namespace Caldera\Container;
 
 use RuntimeException;
 
-use Caldera\Container\Container;
-
 trait ContainerAware {
 
 	/**
 	 * Container instance
 	 * @var ?Container
 	 */
-	protected $container;
+	protected ?Container $container = null;
 
-	/**
+    /**
 	 * Set container instance
 	 * @param Container $container Container instance
 	 * @return $this

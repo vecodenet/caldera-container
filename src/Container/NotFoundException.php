@@ -13,6 +13,4 @@ namespace Caldera\Container;
 
 use Psr\Container\NotFoundExceptionInterface;
 
-use Caldera\Container\ContainerException;
-
 class NotFoundException extends ContainerException implements NotFoundExceptionInterface { }

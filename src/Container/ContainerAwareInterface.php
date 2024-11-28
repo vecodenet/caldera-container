@@ -11,10 +11,6 @@ declare(strict_types = 1);
 
 namespace Caldera\Container;
 
-use RuntimeException;
-
-use Caldera\Container\Container;
-
 interface ContainerAwareInterface {
 
 	/**

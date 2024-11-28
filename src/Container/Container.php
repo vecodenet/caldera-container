@@ -15,39 +15,38 @@ use ArrayAccess;
 use Closure;
 use Exception;
 use ReflectionClass;
+use ReflectionException;
+use ReflectionFunction;
+use ReflectionFunctionAbstract;
+use ReflectionMethod;
 
 use Psr\Container\ContainerInterface;
 
-use Caldera\Container\ContainerAwareInterface;
-use Caldera\Container\ContainerException;
-use Caldera\Container\NotFoundException;
-use Caldera\Container\Service;
-
-class Container implements ContainerInterface, ArrayAccess {
+class Container implements ContainerInterface, CallerInterface, ArrayAccess {
 
 	/**
 	 * Services array
-	 * @var array
+	 * @var array<string, Service>
 	 */
-	protected $services = [];
+	protected array $services = [];
 
 	/**
 	 * Providers array
-	 * @var array
+	 * @var array<ProviderInterface>
 	 */
-	protected $providers = [];
+	protected array $providers = [];
 
 	/**
 	 * Registered providers array
-	 * @var array
+	 * @var array<ProviderInterface>
 	 */
-	protected $registered = [];
+	protected array $registered = [];
 
 	/**
 	 * Booted providers array
-	 * @var array
+	 * @var array<ProviderInterface>
 	 */
-	protected $booted = [];
+	protected array $booted = [];
 
 	/**
 	 * Add a service
@@ -69,9 +68,9 @@ class Container implements ContainerInterface, ArrayAccess {
 	/**
 	 * Add a new service provider
 	 * @param  ProviderInterface $provider Service provider
-	 * @return $this
+	 * @return self
 	 */
-	public function provider(ProviderInterface $provider) {
+	public function provider(ProviderInterface $provider): self {
 		if ($provider instanceof ContainerAwareInterface) {
 			$provider->setContainer($this);
 		}
@@ -83,9 +82,9 @@ class Container implements ContainerInterface, ArrayAccess {
 	/**
 	 * Remove an entry
 	 * @param string $name Service name
-	 * @return $this
+	 * @return self
 	 */
-	public function remove(string $name) {
+	public function remove(string $name): self {
 		if ( $this->has($name) ) {
 			unset( $this->services[$name] );
 		}
@@ -97,7 +96,7 @@ class Container implements ContainerInterface, ArrayAccess {
 	 * @param string $name Identifier of the entry to look for.
 	 * @return mixed
 	 */
-	public function get(string $name) {
+	public function get(string $name): mixed {
 		if ( $this->has($name) ) {
 			if ( $this->provides($name) ) {
 				$this->register($name);
@@ -144,7 +143,7 @@ class Container implements ContainerInterface, ArrayAccess {
 				}
 				return $instance;
 			} else {
-				throw new ContainerException($this, "Service '{$name}' can not be instantiated");
+				throw new ContainerException($this, "Service '{$name}' can not be instantiated"); // @codeCoverageIgnore
 			}
 		} else if ( class_exists($name) ) {
 			# Fully-qualified class name, get a new instance
@@ -153,7 +152,7 @@ class Container implements ContainerInterface, ArrayAccess {
 			if ( is_object( $instance ) ) {
 				return $instance;
 			} else {
-				throw new ContainerException($this, "Class '{$name}' can not be instantiated");
+				throw new ContainerException($this, "Class '{$name}' can not be instantiated"); // @codeCoverageIgnore
 			}
 		} else {
 			throw new NotFoundException($this, "Service '{$name}' not found");
@@ -218,7 +217,7 @@ class Container implements ContainerInterface, ArrayAccess {
 	 * @param  array           $arguments Array of constructor arguments
 	 * @return mixed
 	 */
-	protected function make(ReflectionClass $reflector, array $arguments = []) {
+	protected function make(ReflectionClass $reflector, array $arguments = []): mixed {
 		$constructor = $reflector->getConstructor();
 		if ($constructor) {
 			# Resolve constructor parameters
@@ -334,4 +333,47 @@ class Container implements ContainerInterface, ArrayAccess {
 			}
 		}
 	}
+
+    /**
+     * Call a callable resolving its parameters
+     * @param mixed $callable
+     * @param array $arguments
+     * @return mixed
+     * @throws ReflectionException
+     */
+    public function call(mixed $callable, array $arguments = []): mixed {
+        $reflector = $this->callableReflector($callable);
+        # Resolve callable parameters
+        $parameters = $reflector->getParameters();
+        $resolved = $this->resolve($parameters, $arguments);
+        # Sort the resolved arguments array
+        ksort($resolved);
+        # Call the callable
+        return call_user_func_array($callable, $resolved);
+    }
+
+    /**
+     * Get a reflector for a callable
+     * @param  mixed $callable The callable to get a reflector for
+     * @throws ReflectionException
+     */
+    protected function callableReflector(mixed $callable): ReflectionFunctionAbstract {
+        if ($callable instanceof Closure) {
+            return new ReflectionFunction($callable);
+        }
+        if (is_array($callable)) {
+            [$class, $method] = $callable;
+            if (! method_exists($class, $method)) {
+                throw new ContainerException($this, "Method '{$method}' does not exist");
+            }
+            return new ReflectionMethod($class, $method);
+        }
+        if (is_object($callable) && method_exists($callable, '__invoke')) {
+            return new ReflectionMethod($callable, '__invoke');
+        }
+        if (is_string($callable) && function_exists($callable)) {
+            return new ReflectionFunction($callable);
+        }
+        throw new ContainerException($this, "The specified value is not a callable");
+    }
 }

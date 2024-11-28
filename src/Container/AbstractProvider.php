@@ -20,9 +20,9 @@ abstract class AbstractProvider implements ProviderInterface, ContainerAwareInte
 
 	/**
 	 * Map of provided classes
-	 * @var array
+	 * @var array<string>
 	 */
-	protected $provides = [];
+	protected array $provides = [];
 
 	/**
 	 * Bootstrap service provider

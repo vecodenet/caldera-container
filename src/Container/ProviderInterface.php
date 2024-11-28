@@ -11,8 +11,6 @@ declare(strict_types = 1);
 
 namespace Caldera\Container;
 
-use Psr\Container\ContainerInterface;
-
 interface ProviderInterface {
 
 	/**

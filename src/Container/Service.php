@@ -15,40 +15,40 @@ class Service {
 
 	/**
 	 * Locked flag
-	 * @var boolean
+	 * @var bool
 	 */
-	protected $locked = false;
+	protected bool $locked = false;
 
 	/**
 	 * Shared flag
-	 * @var boolean
+	 * @var bool
 	 */
-	protected $shared = false;
+	protected bool $shared = false;
 
 	/**
 	 * Service instance
-	 * @var mixed
+	 * @var mixed|null
 	 */
-	protected $instance;
+	protected mixed $instance;
 
 	/**
 	 * Constructor arguments
 	 * @var array
 	 */
-	protected $arguments = [];
+	protected array $arguments = [];
 
 	/**
 	 * Decorator methods
 	 * @var array
 	 */
-	protected $decorators = [];
+	protected array $decorators = [];
 
 	/**
 	 * Constructor
-	 * @param bool   $shared   Shared flag
-	 * @param mixed  $instance Service instance
+	 * @param bool       $shared   Shared flag
+	 * @param mixed|null $instance Service instance
 	 */
-	public function __construct(bool $shared, $instance = null) {
+	public function __construct(bool $shared, mixed $instance = null) {
 		$this->shared = $shared;
 		$this->instance = $instance;
 	}
@@ -56,9 +56,9 @@ class Service {
 	/**
 	 * Set locked flag
 	 * @param  bool $locked Locked flag
-	 * @return $this
+	 * @return self
 	 */
-	public function setLocked(bool $locked) {
+	public function setLocked(bool $locked): self {
 		$this->locked = $locked;
 		return $this;
 	}
@@ -66,9 +66,9 @@ class Service {
 	/**
 	 * Set shared flag
 	 * @param  bool $shared Shared flag
-	 * @return $this
+	 * @return self
 	 */
-	public function setShared(bool $shared) {
+	public function setShared(bool $shared): self {
 		$this->shared = $shared;
 		return $this;
 	}
@@ -76,9 +76,9 @@ class Service {
 	/**
 	 * Set service instance
 	 * @param  mixed $instance Service instance
-	 * @return $this
+	 * @return self
 	 */
-	public function setInstance($instance) {
+	public function setInstance($instance): self {
 		$this->instance = $instance;
 		return $this;
 	}
@@ -87,9 +87,9 @@ class Service {
 	 * Add a constructor argument
 	 * @param  string $name  Argument name
 	 * @param  string $value Argument value
-	 * @return $this
+	 * @return self
 	 */
-	public function withArgument(string $name, $value = '') {
+	public function withArgument(string $name, $value = ''): self {
 		$this->arguments[$name] = $value;
 		return $this;
 	}
@@ -98,26 +98,26 @@ class Service {
 	 * Add a decorator method
 	 * @param  string $name      Method name
 	 * @param  array  $arguments Method arguments
-	 * @return $this
+	 * @return self
 	 */
-	public function withDecorator(string $name, array $arguments = []) {
+	public function withDecorator(string $name, array $arguments = []): self {
 		$this->decorators[$name] = $arguments;
 		return $this;
 	}
 
 	/**
 	 * Check locked flag
-	 * @return boolean
+	 * @return bool
 	 */
-	public function isLocked() {
+	public function isLocked(): bool {
 		return $this->locked == true;
 	}
 
 	/**
 	 * Check shared flag
-	 * @return boolean
+	 * @return bool
 	 */
-	public function isShared() {
+	public function isShared(): bool {
 		return $this->shared == true;
 	}
 
@@ -125,17 +125,17 @@ class Service {
 	 * Get service instance
 	 * @return mixed
 	 */
-	public function getInstance() {
+	public function getInstance(): mixed {
 		return $this->instance;
 	}
 
 	/**
 	 * Get constructor argument
 	 * @param  string $name    Argument name
-	 * @param  string $default Default argument value
+	 * @param  mixed $default Default argument value
 	 * @return mixed
 	 */
-	public function getArgument(string $name, $default = '') {
+	public function getArgument(string $name, mixed $default = ''): mixed {
 		return $this->arguments[$name] ?? $default;
 	}
 
@@ -144,7 +144,7 @@ class Service {
 	 * @param  string $name Decorator name
 	 * @return mixed
 	 */
-	public function getDecorator(string $name) {
+	public function getDecorator(string $name): mixed {
 		return $this->decorators[$name] ?? null;
 	}
 
@@ -152,7 +152,7 @@ class Service {
 	 * Get constructor arguments
 	 * @return array
 	 */
-	public function getArguments() {
+	public function getArguments(): array {
 		return $this->arguments;
 	}
 
@@ -160,7 +160,7 @@ class Service {
 	 * Get decorator methods
 	 * @return array
 	 */
-	public function getDecorators() {
+	public function getDecorators(): array {
 		return $this->decorators;
 	}
 }

@@ -23,7 +23,7 @@ class ContainerException extends LogicException implements ContainerExceptionInt
 	 * Container instance
 	 * @var ContainerInterface
 	 */
-	protected $container;
+	protected ContainerInterface $container;
 
 	/**
 	 * Constructor

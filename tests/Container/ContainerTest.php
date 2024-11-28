@@ -16,8 +16,6 @@ use RuntimeException;
 
 use PHPUnit\Framework\TestCase;
 
-use Psr\Container\ContainerInterface;
-
 use Caldera\Container\Container;
 use Caldera\Container\ContainerException;
 use Caldera\Container\NotFoundException;
@@ -293,6 +291,61 @@ class ContainerTest extends TestCase {
 		$this->assertInstanceOf(Baz::class, $instance);
 	}
 
+    public function testAddServiceThenResolveToCallable() {
+		# Create container
+		$container = new Container();
+		# Add a service using an Interface and an Implementation class
+		$container->add(Baz::class, true);
+		$container->add(Cuz::class, true, Baz::class);
+        # Call a callable
+        $ret = $container->call(function(Baz $baz, Cuz $cuz) {
+            return $baz;
+        });
+        $this->assertInstanceOf(Baz::class, $ret);
+        # Call a callable with an argument
+        $ret = $container->call(function(Baz $baz, int $num) {
+            return $num;
+        }, ['num' => 10]);
+        $this->assertEquals(10, $ret);
+        # Call a callable as an array
+        $foo = new Foo();
+        $callable = [$foo, 'doSomethingWithCuz'];
+        $ret = $container->call($callable);
+        $this->assertTrue($ret);
+        # Call a callable as an invokable class
+        $foo = new Foo();
+        $ret = $container->call($foo);
+        $this->assertTrue($ret);
+        # Call a callable as a string
+        $ret = $container->call('in_array', ['needle' => 3, 'haystack' => [1,3,5,7]]);
+        $this->assertTrue($ret);
+        # Call a callable, expect an exception
+        try {
+            $container->call(function(Baz $baz, int $num) {
+                return $baz;
+            });
+            $this->fail('This must throw a ContainerException');
+        } catch (Exception $e) {
+            $this->assertInstanceOf(ContainerException::class, $e);
+        }
+        # Call a callable, expect an exception
+        try {
+            $callable = [$foo, 'thisDoesNotExist'];
+            $container->call($callable);
+            $this->fail('This must throw a ContainerException');
+        } catch (Exception $e) {
+            $this->assertInstanceOf(ContainerException::class, $e);
+        }
+        # Call a non-callable, expect an exception
+        try {
+            $callable = 'thisIsJustAnString!';
+            $container->call($callable);
+            $this->fail('This must throw a ContainerException');
+        } catch (Exception $e) {
+            $this->assertInstanceOf(ContainerException::class, $e);
+        }
+    }
+
 	public function testServiceProvider() {
 		# Create container
 		$container = new Container();
@@ -328,7 +381,13 @@ class ContainerTest extends TestCase {
 
 class Foo {
 
-	# Empty class
+	public function doSomethingWithCuz(Cuz $cuz): bool {
+        return true;
+    }
+
+    public function __invoke(Cuz $cuz): bool {
+        return true;
+    }
 }
 
 class Bar {
@@ -378,7 +437,7 @@ class Goo {
 
 class FooProvider extends AbstractProvider {
 
-	protected $provides = [
+	protected array $provides = [
 		Foo::class,
 		Bar::class
 	];
