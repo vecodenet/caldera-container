@@ -244,7 +244,7 @@ class Container implements ContainerInterface, CallerInterface, ArrayAccess {
 				# Get parameter type
 				$type = $parameter->getType();
 				$argument = $arguments[ $parameter->getName() ] ?? null;
-				if (! $type->isBuiltin() ) {
+				if ( $type && !$type->isBuiltin() ) {
 					if ( $argument && get_class($argument) === $type->getName() ) {
 						# Use the given argument
 						$resolved[] = $argument;
